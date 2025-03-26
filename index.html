@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="fa">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ویرایشگر کد پیشرفته</title>
+
+    <!-- استایل CodeMirror -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/hint/show-hint.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #1e1e1e;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .editor {
+            width: 50%;
+            height: 100%;
+            padding: 10px;
+            background-color: #1e1e1e;
+            color: white;
+            overflow: hidden;
+        }
+
+        .output {
+            width: 50%;
+            height: 100%;
+            background-color: white;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: white;
+        }
+
+        /* تنظیمات CodeMirror */
+        .CodeMirror {
+            height: 150px;
+            font-size: 14px;
+            background-color: #1e1e1e;
+            color: white;
+            overflow: hidden;
+        }
+
+        /* نسخه موبایل */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .editor,
+            .output {
+                width: 100%;
+                height: 100vh;
+            }
+
+            .editor {
+                display: block;
+            }
+
+            .output {
+                display: none;
+            }
+        }
+
+        #toggle-view {
+            display: none;
+            /* پیش‌فرض مخفی باشه */
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #ff9800;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            #toggle-view {
+                display: block;
+                /* فقط در موبایل نمایش داده بشه */
+            }
+        }
+
+        /* تنظیمات کلی */
+        html,
+        body {
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            /* جلوگیری از اسکرول کلی */
+        }
+
+        /* تنظیمات کانتینر اصلی */
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+        }
+
+        /* محیط کدنویسی */
+        .editor {
+            width: 50%;
+            height: 100vh;
+            padding: 10px;
+            background-color: #1e1e1e;
+            color: white;
+            overflow-y: auto !important;
+            scrollbar-width: thin;
+        }
+
+        /* محیط نمایش خروجی */
+        .output {
+            width: 50%;
+            height: 100vh;
+            background-color: white;
+            padding: 10px;
+            overflow-y: auto !important;
+            scrollbar-width: thin;
+        }
+
+        /* نسخه موبایل: نمایش یکی از محیط‌ها در هر لحظه */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .editor,
+            .output {
+                width: 100%;
+                height: 100vh;
+                position: absolute;
+                top: 0;
+                left: 0;
+            }
+
+            .output {
+                display: none;
+                /* پیش‌فرض، محیط خروجی مخفی باشه */
+            }
+        }
+
+        /* دکمه جابه‌جایی بین محیط‌ها در موبایل */
+        #toggle-view {
+            display: none;
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #ff9800;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            #toggle-view {
+                display: block;
+            }
+        }
+
+        /* مخفی کردن کامل اسکرول در تمامی مرورگرها */
+        .editor,
+        .output {
+            overflow-y: scroll;
+            scrollbar-width: none;
+            /* برای فایرفاکس */
+        }
+
+        .editor::-webkit-scrollbar,
+        .output::-webkit-scrollbar {
+            display: none;
+            /* برای کروم و سایر مرورگرهای وب‌کیت */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="editor" id="editor">
+            <label>HTML</label>
+            <textarea id="html-code"></textarea>
+
+            <label>CSS</label>
+            <textarea id="css-code"></textarea>
+
+            <label>JavaScript</label>
+            <textarea id="js-code"></textarea>
+        </div>
+
+        <div class="output" id="output">
+            <iframe id="output-frame"></iframe>
+        </div>
+    </div>
+    <button id="toggle-view">مشاهده خروجی</button>
+    <!-- اسکریپت‌های CodeMirror -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/hint/show-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/hint/html-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/hint/css-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/hint/javascript-hint.min.js"></script>
+    <script>// ویرایشگر HTML
+        let htmlEditor = CodeMirror.fromTextArea(document.getElementById("html-code"), {
+            mode: "xml",
+            theme: "dracula",
+            lineNumbers: true,
+            autoCloseTags: true,
+            extraKeys: {
+                "Ctrl-Space": "autocomplete"
+            },
+            hintOptions: {
+                completeSingle: false,
+            }
+        });
+
+        // ویرایشگر CSS
+        let cssEditor = CodeMirror.fromTextArea(document.getElementById("css-code"), {
+            mode: "css",
+            theme: "dracula",
+            lineNumbers: true,
+            extraKeys: {
+                "Ctrl-Space": "autocomplete"
+            },
+            hintOptions: {
+                completeSingle: false,
+            }
+        });
+
+        // ویرایشگر JavaScript
+        let jsEditor = CodeMirror.fromTextArea(document.getElementById("js-code"), {
+            mode: "javascript",
+            theme: "dracula",
+            lineNumbers: true,
+            extraKeys: {
+                "Ctrl-Space": "autocomplete"
+            },
+            hintOptions: {
+                completeSingle: false,
+            }
+        });
+
+        // مقدار پیش‌فرض برای HTML (CSS و JS خالی باشند)
+        htmlEditor.setValue(`<!DOCTYPE html>
+        <html>
+        <head>
+            <title>صفحه نمونه</title>
+        </head>
+        <body>
+            <h1>سلام دنیا!</h1>
+        </body>
+        </html>`);
+
+        // تابع به‌روزرسانی خروجی
+        // تابع به‌روزرسانی خروجی بدون هیچ استایل پیش‌فرض
+        function updateOutput() {
+            let outputFrame = document.getElementById("output-frame").contentWindow.document;
+
+            outputFrame.open();
+            outputFrame.write(`
+                <html>
+                <head>
+                    <style>
+        
+                    </style>
+                    <style>${cssEditor.getValue()}</style>
+                </head>
+                <body>
+                    ${htmlEditor.getValue()}
+                    <script>${jsEditor.getValue()}<\/script>
+                </body>
+                </html>
+            `);
+            outputFrame.close();
+        }
+        // آپدیت خودکار خروجی هنگام تغییر کد
+        htmlEditor.on("change", updateOutput);
+        cssE;
+        ditor.on("change", updateOutput);
+        jsEditor.on("change", updateOutput)
+        // فعال‌سازی تکمیل خودکار بدون نیاز به دکمه
+        htmlEditor.on("inputRead", function (editor) {
+            editor.showHint();
+        });
+        cssEditor.on("inputRead", function (editor) {
+            editor.showHint();
+        });
+        jsEditor.on("inputRead", function (editor) {
+            editor.showHint();
+        });
+        // دکمه تغییر نمایش برای موبایل
+        document.getElementById("toggle-view").addEventListener("click", function () {
+            let editor = document.getElementById("editor");
+            let output = document.getElementById("output");
+
+            if (editor.style.display === "none") {
+                editor.style.display = "block";
+                output.style.display = "none";
+                this.textContent = "مشاهده خروجی";
+            } else {
+                editor.style.display = "none";
+                output.style.display = "block";
+                this.textContent = "ویرایش کد";
+            }
+        });
+        function adjustEditorHeight(editor) {
+            let height = Math.min(editor.getScrollInfo().height, 500); // حداکثر 500 پیکسل
+            editor.getWrapperElement().style.height = height + "px";
+        }
+
+        // اضافه کردن تغییر ارتفاع خودکار به ویرایشگرها
+        htmlEditor.on("change", function () { adjustEditorHeight(htmlEditor); });
+        cssEditor.on("change", function () { adjustEditorHeight(cssEditor); });
+        jsEditor.on("change", function () { adjustEditorHeight(jsEditor); });
+    </script>
+</body>
+
+</html>
